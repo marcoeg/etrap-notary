@@ -1,0 +1,21 @@
+{
+  "name": "etrap-near-contract",
+  "version": "1.0.0",
+  "description": "ETRAP NEAR Smart Contract for blockchain transaction anchoring",
+  "scripts": {
+    "build": "./build.sh",
+    "deploy:testnet": "near deploy --accountId $ACCOUNT_ID --wasmFile out/etrap_contract.wasm",
+    "test": "cargo test"
+  },
+  "devDependencies": {
+    "near-cli": "^4.0.0"
+  },
+  "keywords": [
+    "near",
+    "blockchain",
+    "smart-contract",
+    "etrap"
+  ],
+  "author": "ETRAP Team",
+  "license": "MIT"
+}

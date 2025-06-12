@@ -1,0 +1,25 @@
+[package]
+name = "etrap-near-contract"
+version = "1.0.0"
+authors = ["ETRAP Team"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+near-sdk = "5.1.0"
+near-contract-standards = "5.1.0"
+borsh = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true
