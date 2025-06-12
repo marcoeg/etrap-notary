@@ -122,8 +122,8 @@ Emits structured events for off-chain indexers containing:
 ## Architecture
 
 ```
-On-Chain (NEAR)          Off-Chain (S3)
-│                        │
+On-Chain (NEAR)         Off-Chain (S3)
+│                       │
 ├─ NFT Metadata         ├─ Transaction Details
 ├─ Merkle Root          ├─ Full Merkle Tree
 ├─ Batch Summary        ├─ Individual Proofs
