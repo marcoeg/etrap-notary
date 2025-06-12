@@ -1,6 +1,7 @@
 # Rust build artifacts
 /target/
 Cargo.lock
+CLAUDE.md
 
 # WASM build artifacts
 *.wasm

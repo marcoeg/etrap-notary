@@ -209,6 +209,22 @@ impl ETRAPContract {
         }
     }
     
+    // Helper function to normalize hash format (remove 0x prefix if present)
+    fn normalize_hash(hash: &str) -> String {
+        if hash.starts_with("0x") {
+            hash[2..].to_string()
+        } else {
+            hash.to_string()
+        }
+    }
+    
+    // Helper function to convert bytes to hex string
+    fn bytes_to_hex(bytes: &[u8]) -> String {
+        bytes.iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<String>()
+    }
+    
     fn internal_mint_with_indices(
         &mut self,
         token_id: TokenId,
@@ -440,24 +456,224 @@ impl ETRAPContract {
         merkle_proof: Vec<String>,
         leaf_index: u32,
     ) -> bool {
-        let batch_summary = self.batch_summaries.get(&token_id)
-            .expect("Batch not found");
-        
-        // Simple verification - in production this would compute the merkle proof
-        let mut current_hash = document_hash;
-        let mut current_index = leaf_index;
-        
-        for proof_element in merkle_proof {
-            // Simplified merkle verification logic
-            if current_index % 2 == 0 {
-                current_hash = format!("{}{}", current_hash, proof_element);
-            } else {
-                current_hash = format!("{}{}", proof_element, current_hash);
+        let batch_summary = match self.batch_summaries.get(&token_id) {
+            Some(summary) => summary,
+            None => {
+                env::log_str(&format!("Batch not found: {}", token_id));
+                return false;
             }
+        };
+        
+        // Check if the merkle root uses simple concatenation (for backward compatibility)
+        if batch_summary.merkle_root.starts_with("simple_concat:") {
+            // Use simple concatenation for testing
+            let expected_root = &batch_summary.merkle_root[14..]; // Skip "simple_concat:"
+            let mut current_hash = document_hash;
+            let mut current_index = leaf_index;
+            
+            for proof_element in merkle_proof {
+                if current_index % 2 == 0 {
+                    current_hash = format!("{}{}", current_hash, proof_element);
+                } else {
+                    current_hash = format!("{}{}", proof_element, current_hash);
+                }
+                current_index /= 2;
+            }
+            
+            return current_hash == expected_root;
+        }
+        
+        // For production: proper merkle verification with SHA256 hashing
+        // Check the hash algorithm from batch metadata
+        let use_sha256 = batch_summary.merkle_root.len() == 64 && 
+                        batch_summary.merkle_root.chars().all(|c| c.is_ascii_hexdigit());
+        
+        if use_sha256 {
+            // Proper SHA256 merkle verification
+            let mut current_hash = Self::normalize_hash(&document_hash);
+            let mut current_index = leaf_index;
+            
+            // If document_hash is not already a hash, hash it first
+            if current_hash.len() != 64 {
+                let hash_bytes = env::sha256(current_hash.as_bytes());
+                current_hash = Self::bytes_to_hex(&hash_bytes);
+            }
+            
+            for proof_element in merkle_proof.iter() {
+                let sibling_hash = Self::normalize_hash(proof_element);
+                
+                // Determine if we're the left or right sibling
+                let combined = if current_index % 2 == 0 {
+                    // We're on the left, proof element is on the right
+                    format!("{}{}", current_hash, sibling_hash)
+                } else {
+                    // We're on the right, proof element is on the left
+                    format!("{}{}", sibling_hash, current_hash)
+                };
+                
+                // Hash the combined value
+                let hash_bytes = env::sha256(combined.as_bytes());
+                current_hash = Self::bytes_to_hex(&hash_bytes);
+                
+                current_index /= 2;
+            }
+            
+            // Compare with the stored merkle root
+            let is_valid = current_hash == Self::normalize_hash(&batch_summary.merkle_root);
+            
+            env::log_str(&format!(
+                "SHA256 verification - Expected: {}, Got: {}, Valid: {}", 
+                batch_summary.merkle_root, current_hash, is_valid
+            ));
+            
+            is_valid
+        } else {
+            // Fall back to simple concatenation for non-SHA256 roots
+            let mut current_hash = document_hash;
+            let mut current_index = leaf_index;
+            
+            for proof_element in merkle_proof {
+                if current_index % 2 == 0 {
+                    current_hash = format!("{}{}", current_hash, proof_element);
+                } else {
+                    current_hash = format!("{}{}", proof_element, current_hash);
+                }
+                current_index /= 2;
+            }
+            
+            let is_valid = current_hash == batch_summary.merkle_root;
+            
+            env::log_str(&format!(
+                "Simple verification - Expected: {}, Got: {}, Valid: {}", 
+                batch_summary.merkle_root, current_hash, is_valid
+            ));
+            
+            is_valid
+        }
+    }
+    
+    // Additional view method: compute merkle root for a set of transaction hashes
+    pub fn compute_merkle_root(&self, transaction_hashes: Vec<String>, use_sha256: bool) -> String {
+        if transaction_hashes.is_empty() {
+            return String::new();
+        }
+        
+        // Initialize current level with transaction hashes
+        let mut current_level: Vec<String> = if use_sha256 {
+            // Hash each transaction if using SHA256
+            transaction_hashes.iter()
+                .map(|tx| {
+                    let normalized = Self::normalize_hash(tx);
+                    if normalized.len() == 64 && normalized.chars().all(|c| c.is_ascii_hexdigit()) {
+                        // Already a hash
+                        normalized
+                    } else {
+                        // Hash the transaction
+                        let hash_bytes = env::sha256(tx.as_bytes());
+                        Self::bytes_to_hex(&hash_bytes)
+                    }
+                })
+                .collect()
+        } else {
+            // Use transactions as-is for simple concatenation
+            transaction_hashes
+        };
+        
+        // Build the tree level by level
+        while current_level.len() > 1 {
+            let mut next_level = Vec::new();
+            
+            for i in (0..current_level.len()).step_by(2) {
+                if i + 1 < current_level.len() {
+                    // Combine pair of nodes
+                    let combined = if use_sha256 {
+                        let concat = format!("{}{}", current_level[i], current_level[i + 1]);
+                        let hash_bytes = env::sha256(concat.as_bytes());
+                        Self::bytes_to_hex(&hash_bytes)
+                    } else {
+                        format!("{}{}", current_level[i], current_level[i + 1])
+                    };
+                    next_level.push(combined);
+                } else {
+                    // Odd number of nodes, promote the last one
+                    next_level.push(current_level[i].clone());
+                }
+            }
+            
+            current_level = next_level;
+        }
+        
+        current_level[0].clone()
+    }
+    
+    // View method to help with testing: generate merkle proof for a transaction
+    pub fn generate_merkle_proof(&self, transactions: Vec<String>, tx_index: u32, use_sha256: bool) -> Vec<String> {
+        if transactions.is_empty() || tx_index >= transactions.len() as u32 {
+            return vec![];
+        }
+        
+        let mut tree: Vec<Vec<String>> = vec![];
+        
+        // Build complete tree
+        let mut current_level: Vec<String> = if use_sha256 {
+            transactions.iter()
+                .map(|tx| {
+                    let hash_bytes = env::sha256(tx.as_bytes());
+                    Self::bytes_to_hex(&hash_bytes)
+                })
+                .collect()
+        } else {
+            transactions
+        };
+        
+        tree.push(current_level.clone());
+        
+        while current_level.len() > 1 {
+            let mut next_level = Vec::new();
+            
+            for i in (0..current_level.len()).step_by(2) {
+                if i + 1 < current_level.len() {
+                    let combined = if use_sha256 {
+                        let concat = format!("{}{}", current_level[i], current_level[i + 1]);
+                        let hash_bytes = env::sha256(concat.as_bytes());
+                        Self::bytes_to_hex(&hash_bytes)
+                    } else {
+                        format!("{}{}", current_level[i], current_level[i + 1])
+                    };
+                    next_level.push(combined);
+                } else {
+                    next_level.push(current_level[i].clone());
+                }
+            }
+            
+            tree.push(next_level.clone());
+            current_level = next_level;
+        }
+        
+        // Generate proof
+        let mut proof = vec![];
+        let mut current_index = tx_index;
+        
+        for level in 0..(tree.len() - 1) {
+            let level_size = tree[level].len() as u32;
+            
+            // Determine sibling index
+            let sibling_index = if current_index % 2 == 0 {
+                current_index + 1
+            } else {
+                current_index - 1
+            };
+            
+            // Add sibling to proof if it exists
+            if sibling_index < level_size {
+                proof.push(tree[level][sibling_index as usize].clone());
+            }
+            
+            // Move to parent index
             current_index /= 2;
         }
         
-        current_hash == batch_summary.merkle_root
+        proof
     }
     
     // Get recent batches
