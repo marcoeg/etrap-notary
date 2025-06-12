@@ -817,6 +817,15 @@ impl ETRAPContract {
         self.etrap_settings.paused = paused;
     }
     
+    // View method to get contract settings
+    pub fn get_settings(&self) -> serde_json::Value {
+        json!({
+            "etrap_treasury": self.etrap_settings.etrap_treasury,
+            "fee_percentage": self.etrap_settings.fee_percentage,
+            "paused": self.etrap_settings.paused
+        })
+    }
+    
     #[private]
     pub fn update_treasury(&mut self, new_treasury: AccountId) {
         self.etrap_settings.etrap_treasury = new_treasury;

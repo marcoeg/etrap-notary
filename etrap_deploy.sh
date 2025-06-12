@@ -294,4 +294,7 @@ near view etrap.testnet get_recent_batches '{"limit": 100}' > batches_export.jso
 # Monitor gas usage for optimization
 near view etrap.testnet get_batch_stats '{}' | jq '.total_batches'
 
+# Get contract settings 
+near view etrap.testnet get_settings '{}'
+
 echo "ETRAP Contract deployment and testing complete!"
