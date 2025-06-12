@@ -1,10 +1,32 @@
+// ETRAP (Enterprise Transaction Receipt Anchoring Platform) NEAR Smart Contract
+//
+// This contract is part of the ETRAP platform, which provides blockchain-based proof of 
+// integrity for database transactions. ETRAP enables enterprises to anchor transaction 
+// receipts on the blockchain, creating an immutable audit trail that can be used for 
+// compliance, security, and verification purposes.
+//
+// The contract manages NFTs where each NFT represents a batch of database transactions.
+// Each NFT contains a merkle root that enables cryptographic verification of individual
+// transactions within the batch. This design allows for efficient on-chain storage while
+// maintaining the ability to prove the integrity of millions of transactions.
+//
+// Key features:
+// - NEP-177 compliant NFT implementation
+// - Multi-tenant architecture (each organization deploys their own instance)
+// - Merkle tree verification for transaction integrity
+// - Multiple indices for efficient querying (by database, time, table, etc.)
+// - Minimal on-chain storage with S3 references for detailed data
+// - Built-in fee collection mechanism for platform sustainability
+//
+// Copyright (c) 2025 Graziano Labs Corp. All rights reserved.
+
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::store::{LookupMap, IterableMap, IterableSet, Vector};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
     env, near_bindgen, require, AccountId, BorshStorageKey, NearToken,
-    PanicOnDefault, PromiseOrValue,
+    PanicOnDefault, Promise, PromiseOrValue,
 };
 use near_sdk::serde_json::json;
 use std::collections::HashMap;
@@ -22,7 +44,7 @@ use near_contract_standards::non_fungible_token::NonFungibleToken;
 
 // Constants
 const DATA_IMAGE_SVG_ETRAP_ICON: &str = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2240%22%20fill%3D%22%234A90E2%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2260%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-size%3D%2230%22%20font-weight%3D%22bold%22%3EETRAP%3C%2Ftext%3E%3C%2Fsvg%3E";
-const ETRAP_FEE_PERCENTAGE: u16 = 25; // 25% fee collection
+const ETRAP_FEE_AMOUNT: u128 = 10_000_000_000_000_000_000_000; // 0.01 NEAR in yoctoNEAR
 const RECENT_TOKENS_LIMIT: u64 = 100;
 
 #[derive(BorshSerialize, BorshStorageKey)]
@@ -118,7 +140,7 @@ pub struct AnchoringData {
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct ETRAPSettings {
-    pub fee_percentage: u16,
+    pub fee_amount: NearToken,
     pub etrap_treasury: AccountId,
     pub paused: bool,
 }
@@ -380,7 +402,7 @@ impl ETRAPContract {
             total_batches_per_database: LookupMap::new(StorageKey::TotalBatchesPerDatabase),
             database_list: IterableSet::new(StorageKey::DatabaseList),
             etrap_settings: ETRAPSettings {
-                fee_percentage: ETRAP_FEE_PERCENTAGE,
+                fee_amount: NearToken::from_yoctonear(ETRAP_FEE_AMOUNT),
                 etrap_treasury,
                 paused: false,
             },
@@ -408,10 +430,25 @@ impl ETRAPContract {
         // Calculate and collect ETRAP fee
         let attached_deposit = env::attached_deposit();
         let storage_deposit = NearToken::from_yoctonear(env::storage_byte_cost().as_yoctonear() * 4000); // Estimate 4KB storage
+        
+        // ETRAP fee is a fixed amount
+        let etrap_fee = self.etrap_settings.fee_amount;
+        
+        let total_required = storage_deposit.saturating_add(etrap_fee);
+        
         require!(
-            attached_deposit >= storage_deposit,
-            "Insufficient deposit for storage"
+            attached_deposit >= total_required,
+            format!("Insufficient deposit. Required: {} yoctoNEAR (storage: {}, fee: {})", 
+                total_required.as_yoctonear(), 
+                storage_deposit.as_yoctonear(), 
+                etrap_fee.as_yoctonear())
         );
+        
+        // Transfer fee to ETRAP treasury
+        if etrap_fee > NearToken::from_yoctonear(0) {
+            Promise::new(self.etrap_settings.etrap_treasury.clone())
+                .transfer(etrap_fee);
+        }
         
         // Mint with indices
         let token = self.internal_mint_with_indices(
@@ -439,6 +476,10 @@ impl ETRAPContract {
                         "bucket": batch_summary.s3_bucket,
                         "key": batch_summary.s3_key
                     }
+                },
+                "fee_info": {
+                    "etrap_fee": etrap_fee.as_yoctonear().to_string(),
+                    "treasury": self.etrap_settings.etrap_treasury.to_string()
                 }
             }]
         });
@@ -821,7 +862,7 @@ impl ETRAPContract {
     pub fn get_settings(&self) -> serde_json::Value {
         json!({
             "etrap_treasury": self.etrap_settings.etrap_treasury,
-            "fee_percentage": self.etrap_settings.fee_percentage,
+            "fee_amount": self.etrap_settings.fee_amount.as_yoctonear().to_string(),
             "paused": self.etrap_settings.paused
         })
     }

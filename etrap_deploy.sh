@@ -35,10 +35,10 @@ cp target/wasm32-unknown-unknown/release/etrap_near_contract.wasm ./out/etrap_co
 # 2. DEPLOY CONTRACT
 #########################
 
-# Deploy the contract to the organization's account
+# Deploy the contract to the organization's account -- same for re-deployment
 near deploy etrap.testnet out/etrap_contract.wasm
 
-# Initialize the contract
+# Initialize the contract -- not needed when re-deploying
 near call etrap.testnet new \
   '{"organization_id": "etrap.testnet", "organization_name": "etrap", "etrap_treasury": "etrap-treasury.testnet"}' \
   --accountId etrap.testnet

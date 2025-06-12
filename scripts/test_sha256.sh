@@ -4,7 +4,7 @@
 
 echo "Minting test batch with SHA256 merkle root..."
 
-near call etrap.testnet mint_batch "$(cat <<'EOF'
+near call etrap2.testnet mint_batch "$(cat <<'EOF'
 {
   "token_id": "BATCH-TEST-SHA256-001",
   "receiver_id": "etrap.testnet",
@@ -39,7 +39,7 @@ near call etrap.testnet mint_batch "$(cat <<'EOF'
   }
 }
 EOF
-)" --accountId etrap.testnet --deposit 0.1
+)" --accountId etrap2.testnet --deposit 0.1
 
 echo ""
 echo "Done! Now you can verify with:"
