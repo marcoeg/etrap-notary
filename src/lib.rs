@@ -44,8 +44,8 @@ use near_contract_standards::non_fungible_token::NonFungibleToken;
 
 // Constants
 const DATA_IMAGE_SVG_ETRAP_ICON: &str = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2240%22%20fill%3D%22%234A90E2%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2260%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-size%3D%2230%22%20font-weight%3D%22bold%22%3EETRAP%3C%2Ftext%3E%3C%2Fsvg%3E";
-const ETRAP_FEE_AMOUNT: u128 = 10_000_000_000_000_000_000_000; // 0.01 NEAR in yoctoNEAR
 const RECENT_TOKENS_LIMIT: u64 = 100;
+const YOCTO_PER_NEAR: u128 = 1_000_000_000_000_000_000_000_000; // 10^24
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
@@ -371,8 +371,13 @@ impl ETRAPContract {
         organization_id: AccountId,
         organization_name: String,
         etrap_treasury: AccountId,
+        etrap_fee_amount: f64,
     ) -> Self {
         require!(!env::state_exists(), "Already initialized");
+        require!(etrap_fee_amount >= 0.0, "Fee amount must be non-negative");
+        
+        // Convert NEAR to yoctoNEAR
+        let fee_amount_yocto = (etrap_fee_amount * YOCTO_PER_NEAR as f64) as u128;
         
         let metadata = NFTContractMetadata {
             spec: NFT_METADATA_SPEC.to_string(),
@@ -402,7 +407,7 @@ impl ETRAPContract {
             total_batches_per_database: LookupMap::new(StorageKey::TotalBatchesPerDatabase),
             database_list: IterableSet::new(StorageKey::DatabaseList),
             etrap_settings: ETRAPSettings {
-                fee_amount: NearToken::from_yoctonear(ETRAP_FEE_AMOUNT),
+                fee_amount: NearToken::from_yoctonear(fee_amount_yocto),
                 etrap_treasury,
                 paused: false,
             },

@@ -4,10 +4,10 @@
 
 echo "Minting test batch with SHA256 merkle root..."
 
-near call etrap2.testnet mint_batch "$(cat <<'EOF'
+near call acme.testnet mint_batch "$(cat <<'EOF'
 {
   "token_id": "BATCH-TEST-SHA256-001",
-  "receiver_id": "etrap.testnet",
+  "receiver_id": "acme.testnet",
   "token_metadata": {
     "title": "Test SHA256 Merkle Batch",
     "description": "Testing SHA256 merkle tree verification",
@@ -39,9 +39,9 @@ near call etrap2.testnet mint_batch "$(cat <<'EOF'
   }
 }
 EOF
-)" --accountId etrap2.testnet --deposit 0.1
+)" --accountId acme.testnet --deposit 0.5
 
 echo ""
 echo "Done! Now you can verify with:"
 echo ""
-echo 'near view etrap.testnet verify_document_in_batch '\''{"token_id":"BATCH-TEST-SHA256-001","document_hash":"tx2_customer_payment_67890","merkle_proof":["d779e9231adef3949d1fa4aac69c1a89fbb972a6feb0097bd9e20faac3dc16a9","454e4d0abb96f9ce64d76467a0c63efd188386b77cc08212d67100f7521570e5"],"leaf_index":1}'\'''
+echo 'near view CME.testnet verify_document_in_batch '\''{"token_id":"BATCH-TEST-SHA256-001","document_hash":"tx2_customer_payment_67890","merkle_proof":["d779e9231adef3949d1fa4aac69c1a89fbb972a6feb0097bd9e20faac3dc16a9","454e4d0abb96f9ce64d76467a0c63efd188386b77cc08212d67100f7521570e5"],"leaf_index":1}'\'''

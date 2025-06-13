@@ -31,13 +31,15 @@ Initializes a new ETRAP contract instance for an organization.
 - `organization_id`: `AccountId` - The NEAR account ID of the organization
 - `organization_name`: `String` - Human-readable name of the organization
 - `etrap_treasury`: `AccountId` - NEAR account to receive ETRAP fees
+- `etrap_fee_amount`: `f64` - Fee amount in NEAR (e.g., 0.01 for 0.01 NEAR)
 
 **Example**:
 ```bash
 near call $CONTRACT_ID new '{
   "organization_id": "myorg.testnet",
   "organization_name": "My Organization",
-  "etrap_treasury": "etrap-treasury.testnet"
+  "etrap_treasury": "etrap-treasury.testnet",
+  "etrap_fee_amount": 0.01
 }' --accountId $CONTRACT_ID
 ```
 
@@ -59,7 +61,7 @@ Creates a new NFT representing a batch of database transactions.
 
 **Returns**: `Token` - The minted NFT token
 
-**Required Deposit**: Minimum ~0.01 NEAR for storage (4KB estimate)
+**Required Deposit**: Storage cost (estimated ~4KB) + ETRAP fee (configured during initialization)
 
 **Example**:
 ```bash
@@ -515,7 +517,7 @@ Retrieves the current contract settings.
 
 **Returns**: JSON object with settings:
 - `etrap_treasury`: Current treasury account
-- `fee_percentage`: Fee percentage (currently 25%)
+- `fee_amount`: Fee amount in yoctoNEAR
 - `paused`: Whether contract is paused
 
 **Example**:
@@ -589,7 +591,7 @@ Standard NEP-177 token metadata:
 
 ## Gas and Storage Costs
 
-- **Minting**: ~0.01 NEAR deposit required for storage
+- **Minting**: Storage deposit (estimated ~4KB) + ETRAP fee (configured during initialization)
 - **View methods**: Free (no gas required)
 - **Transfers**: 1 yoctoNEAR security deposit
 - **Admin methods**: Standard transaction fees

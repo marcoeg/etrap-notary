@@ -129,7 +129,6 @@ On-Chain (NEAR)         Off-Chain (S3)
 ├─ Batch Summary        ├─ Individual Proofs
 └─ S3 Reference         └─ Search Indices
 ```
-
 ## License
 
 MIT

@@ -40,8 +40,8 @@ near deploy etrap.testnet out/etrap_contract.wasm
 
 # Initialize the contract -- not needed when re-deploying
 near call etrap.testnet new \
-  '{"organization_id": "etrap.testnet", "organization_name": "etrap", "etrap_treasury": "etrap-treasury.testnet"}' \
-  --accountId etrap.testnet
+    '{"organization_id": "etrap.testnet", "organization_name": "etrap", "etrap_treasury": "etrap-treasury.testnet", "etrap_fee_amount": 0.05}' \
+    --accountId etrap.testnet
 
 #########################
 # 3. MINT NFT BATCHES
