@@ -37,7 +37,7 @@ A NEAR Protocol smart contract for the Enterprise Transaction Receipt Anchoring 
 
 ## Prerequisites
 
-- [Rust](https://www.rust-lang.org/tools/install) (latest stable)
+- [Rust](https://www.rust-lang.org/tools/install) (1.72.0)
 - [NEAR CLI](https://docs.near.org/tools/near-cli) 
 - Node.js 18+ (for NEAR CLI)
 - A NEAR testnet account
@@ -47,8 +47,8 @@ A NEAR Protocol smart contract for the Enterprise Transaction Receipt Anchoring 
 1. **Clone and install dependencies**:
 ```bash
 git clone <repository>
-cd etrap-near-contract
-npm install
+cd notary
+cargo fetch
 ```
 
 2. **Build the contract**:
@@ -63,13 +63,14 @@ chmod +x build.sh
 export NEAR_ENV=testnet
 
 # Deploy (replace with your account)
-near deploy --accountId yourorg.testnet --wasmFile out/etrap_contract.wasm
+near deploy yourorg.testnet out/etrap_contract.wasm
 
 # Initialize
 near call yourorg.testnet new '{
   "organization_id": "yourorg.testnet",
   "organization_name": "Your Organization",
-  "etrap_treasury": "etrap-treasury.testnet"
+  "etrap_treasury": "etrap-treasury.testnet",
+  "etrap_fee_amount": 0.05
 }' --accountId yourorg.testnet
 ```
 

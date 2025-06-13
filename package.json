@@ -4,7 +4,7 @@
   "description": "ETRAP NEAR Smart Contract for blockchain transaction anchoring",
   "scripts": {
     "build": "./build.sh",
-    "deploy:testnet": "near deploy --accountId $ACCOUNT_ID --wasmFile out/etrap_contract.wasm",
+    "deploy:testnet": "near deploy  $ACCOUNT_ID  out/etrap_contract.wasm",
     "test": "cargo test"
   },
   "devDependencies": {
