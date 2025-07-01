@@ -1,4 +1,33 @@
 #!/bin/bash
+"""
+================================================================================
+ETRAP NEAR Smart Contract - Deployment and Testing Reference
+================================================================================
+
+This script contains comprehensive examples for deploying and testing the ETRAP
+NEAR smart contract. It includes realistic sample data and covers all major
+contract functionality.
+
+What this script covers:
+- Contract deployment and initialization
+- Minting NFT batches with sample transaction data
+- Querying and searching batches using various methods
+- Transaction verification using Merkle proofs
+- Admin functions and contract management
+- Gas usage monitoring and optimization
+
+Usage: This is a REFERENCE script - view commands and copy what you need
+
+WARNING: Do not execute this script directly as it contains hardcoded test data.
+Instead, extract the commands you need and adapt them for your use case.
+
+Examples:
+  # View all commands
+  cat etrap_deploy.sh
+  
+  # Extract deployment section
+  sed -n '/# 2. DEPLOY CONTRACT/,/# 3. MINT NFT BATCHES/p' etrap_deploy.sh
+"""
 
 # ETRAP NEAR Smart Contract - CLI Commands for Testnet Deployment and Testing
 

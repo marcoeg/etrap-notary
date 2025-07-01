@@ -1,4 +1,30 @@
 #!/bin/bash
+"""
+================================================================================
+ETRAP NEAR Smart Contract - Gas Usage Checker
+================================================================================
+
+This script analyzes gas usage for ETRAP smart contract transactions,
+particularly mint_batch operations which are the most gas-intensive.
+
+What this script does:
+- Shows typical gas costs for different contract operations
+- Analyzes specific transactions when provided with transaction ID
+- Calculates NEAR costs based on current gas prices
+- Provides optimization recommendations
+
+Usage: ./check_gas_usage.sh [transaction_id]
+
+Arguments:
+  transaction_id - Optional NEAR transaction ID to analyze
+
+Examples:
+  # Show typical gas costs
+  ./check_gas_usage.sh
+  
+  # Analyze specific transaction
+  ./check_gas_usage.sh 8VtaZjRBVZhSNKMSa6yk4d8B6W8iBZm8hHk9YLnAePHU
+"""
 
 # Script to check gas usage for mint_batch transactions
 

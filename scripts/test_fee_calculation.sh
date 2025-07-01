@@ -1,4 +1,22 @@
 #!/bin/bash
+"""
+================================================================================
+ETRAP NEAR Smart Contract - Fee Calculation Information
+================================================================================
+
+This script provides information about how ETRAP fees are calculated and
+shows the improvements made to the fee calculation logic.
+
+What this script explains:
+- Current fee calculation method (25% of attached deposit)
+- Previous behavior and why it was changed
+- Examples of fee calculations with different deposit amounts
+- Testing recommendations for fee validation
+
+Usage: ./test_fee_calculation.sh
+
+No parameters required - this displays informational content about fee calculation.
+"""
 
 echo "=== ETRAP Fee Calculation Test ==="
 echo ""

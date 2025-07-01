@@ -608,6 +608,57 @@ Common errors:
 
 ## Usage Examples
 
+### Repository Scripts Integration
+
+The notary repository includes several helpful scripts for development and testing:
+
+**Build and deploy workflow:**
+```bash
+# 1. Build the contract
+./build.sh
+
+# 2. Deploy (replace myorg.testnet with your account)
+near deploy myorg.testnet out/etrap_contract.wasm
+
+# 3. Initialize (replace with your details)
+near call myorg.testnet new '{
+  "organization_id": "myorg.testnet",
+  "organization_name": "My Organization",
+  "etrap_treasury": "etrap-treasury.testnet",
+  "etrap_fee_amount": 0.01
+}' --accountId myorg.testnet
+
+# 4. Check settings
+./scripts/check_settings.sh
+```
+
+**Testing and monitoring:**
+```bash
+# Monitor gas usage
+./scripts/check_gas_usage.sh [transaction_id]
+
+# Test SHA256 verification
+./scripts/test_sha256.sh
+
+# View fee calculation info
+./scripts/test_fee_calculation.sh
+```
+
+**Example commands (from etrap_deploy.sh):**
+```bash
+# View recent batches
+near view $CONTRACT_ID get_recent_batches '{"limit": 10}'
+
+# Search by database
+near view $CONTRACT_ID get_batches_by_database '{"database": "production_db"}'
+
+# Search by time range
+near view $CONTRACT_ID get_batches_by_time_range '{
+  "start_timestamp": 1749561600000,
+  "end_timestamp": 1749604800000
+}'
+```
+
 ### Complete Minting Flow
 
 ```bash

@@ -1,4 +1,25 @@
 #!/bin/bash
+"""
+================================================================================
+ETRAP NEAR Smart Contract - Build Script
+================================================================================
+
+This script builds the ETRAP NEAR smart contract from Rust source code to
+WebAssembly (WASM) for deployment on the NEAR blockchain.
+
+What this script does:
+- Ensures the wasm32-unknown-unknown target is installed
+- Builds the contract with optimized release settings
+- Creates output directory and copies the WASM file
+- Shows contract size information
+- Optionally runs wasm-opt for further optimization
+
+Usage: ./build.sh
+
+No parameters required - this is a self-contained build process.
+
+Output: out/etrap_contract.wasm (ready for deployment)
+"""
 
 # ETRAP Smart Contract Build Script
 

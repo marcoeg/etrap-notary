@@ -74,6 +74,70 @@ near call yourorg.testnet new '{
 }' --accountId yourorg.testnet
 ```
 
+## Scripts and Tools
+
+### Build Script
+
+**`build.sh`** - Builds the NEAR smart contract
+
+```bash
+./build.sh
+```
+
+Features:
+- Automatically adds the wasm target
+- Optimizes build with proper flags
+- Creates output directory and copies wasm file
+- Shows contract size
+- Optional wasm-opt optimization if available
+
+### Deployment Script
+
+**`etrap_deploy.sh`** - Comprehensive deployment and testing commands
+
+This script contains complete examples for:
+- Contract deployment and initialization
+- Minting sample NFT batches with realistic data
+- Querying and searching batches
+- Transaction verification examples
+- Admin functions
+
+**Usage:**
+```bash
+# View all commands (don't execute directly - it's a reference script)
+cat etrap_deploy.sh
+
+# Extract specific sections for your use
+```
+
+### Testing Scripts
+
+Located in `scripts/` directory:
+
+**`check_gas_usage.sh`** - Monitor gas costs for transactions
+```bash
+# Check typical gas costs
+./scripts/check_gas_usage.sh
+
+# Check specific transaction
+./scripts/check_gas_usage.sh [TRANSACTION_ID]
+```
+
+**`check_settings.sh`** - View contract settings
+```bash
+./scripts/check_settings.sh
+```
+
+**`test_fee_calculation.sh`** - Information about fee calculation behavior
+```bash
+./scripts/test_fee_calculation.sh
+```
+
+**`test_sha256.sh`** - Test SHA256 merkle root verification
+```bash
+./scripts/test_sha256.sh
+```
+
 ## Contract Methods
 
 ### Write Methods (require gas)
@@ -91,7 +155,6 @@ near call yourorg.testnet new '{
 - `get_batch_stats` - Get statistics
 
 ### Verification
-- `verify_document_in_batch`**: Verifies a transaction belongs to a batch using Merkle proofs.
 - `verify_document_in_batch` - Verify transaction with merkle proof
 
 
@@ -112,6 +175,47 @@ Emits structured events for off-chain indexers containing:
 - S3 location references.
 - Database and table information.
 - Merkle roots for verification.
+
+## Quick Examples
+
+### Basic Contract Interaction
+
+```bash
+# Build the contract
+./build.sh
+
+# Deploy to testnet
+near deploy myorg.testnet out/etrap_contract.wasm
+
+# Initialize
+near call myorg.testnet new '{
+  "organization_id": "myorg.testnet",
+  "organization_name": "My Organization",
+  "etrap_treasury": "etrap-treasury.testnet",
+  "etrap_fee_amount": 0.01
+}' --accountId myorg.testnet
+
+# Check recent batches
+near view myorg.testnet get_recent_batches '{"limit": 5}'
+
+# Check contract settings
+near view myorg.testnet get_settings '{}'
+```
+
+### Development Workflow
+
+```bash
+# 1. Make changes to src/lib.rs
+# 2. Build and test
+./build.sh
+cargo test
+
+# 3. Deploy updated contract
+near deploy myorg.testnet out/etrap_contract.wasm
+
+# 4. Test with sample data (see etrap_deploy.sh for examples)
+near call myorg.testnet mint_batch '{...}' --accountId myorg.testnet --deposit 0.1
+```
 
 ## Key Design Decisions
 - **Storage Optimization**: Uses NEAR's efficient storage patterns with proper key prefixing.
