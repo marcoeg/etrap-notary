@@ -234,10 +234,25 @@ On-Chain (NEAR)         Off-Chain (S3)
 ├─ Batch Summary        ├─ Individual Proofs
 └─ S3 Reference         └─ Search Indices
 ```
-## License
 
-MIT
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+
+## 🪪 License
+
+MIT. See `./LICENSE`
+
+
+## 📄 Copyright
 
 Copyright (c) 2025 Graziano Labs Corp. All rights reserved.
 
 
+## 📧 Contact
+
+For questions or support, please open an issue in the GitHub repository.
+
+---
