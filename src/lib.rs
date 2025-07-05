@@ -269,51 +269,23 @@ impl ETRAPContract {
         
         // Update all indices atomically
         
-        // Index by database
-        let mut db_tokens = self.tokens_by_database
-            .get(&database)
-            .map(|set| {
-                let mut new_set = IterableSet::new(
-                    StorageKey::TokensByDatabaseInner {
-                        database_hash: env::sha256(database.as_bytes())
-                    }
-                );
-                for item in set.iter() {
-                    new_set.insert(item.clone());
+        // Index by database  
+        let mut db_tokens = self.tokens_by_database.remove(&database)
+            .unwrap_or_else(|| IterableSet::new(
+                StorageKey::TokensByDatabaseInner {
+                    database_hash: env::sha256(database.as_bytes())
                 }
-                new_set
-            })
-            .unwrap_or_else(|| {
-                IterableSet::new(
-                    StorageKey::TokensByDatabaseInner {
-                        database_hash: env::sha256(database.as_bytes())
-                    }
-                )
-            });
+            ));
         db_tokens.insert(token_id.clone());
         self.tokens_by_database.insert(database.clone(), db_tokens);
         
         // Index by month
-        let mut month_tokens = self.tokens_by_month
-            .get(&year_month)
-            .map(|vec| {
-                let mut new_vec = Vector::new(
-                    StorageKey::TokensByMonthInner {
-                        month_hash: env::sha256(year_month.as_bytes())
-                    }
-                );
-                for item in vec.iter() {
-                    new_vec.push(item.clone());
+        let mut month_tokens = self.tokens_by_month.remove(&year_month)
+            .unwrap_or_else(|| Vector::new(
+                StorageKey::TokensByMonthInner {
+                    month_hash: env::sha256(year_month.as_bytes())
                 }
-                new_vec
-            })
-            .unwrap_or_else(|| {
-                Vector::new(
-                    StorageKey::TokensByMonthInner {
-                        month_hash: env::sha256(year_month.as_bytes())
-                    }
-                )
-            });
+            ));
         month_tokens.push(token_id.clone());
         self.tokens_by_month.insert(year_month.clone(), month_tokens);
         
@@ -322,34 +294,26 @@ impl ETRAPContract {
         
         // Index by tables
         for table in &batch_summary.table_names {
-            let mut table_tokens = self.tokens_by_table
-                .get(table)
-                .map(|set| {
-                    let mut new_set = IterableSet::new(
-                        StorageKey::TokensByTableInner {
-                            table_hash: env::sha256(table.as_bytes())
-                        }
-                    );
-                    for item in set.iter() {
-                        new_set.insert(item.clone());
+            let mut table_tokens = self.tokens_by_table.remove(table)
+                .unwrap_or_else(|| IterableSet::new(
+                    StorageKey::TokensByTableInner {
+                        table_hash: env::sha256(table.as_bytes())
                     }
-                    new_set
-                })
-                .unwrap_or_else(|| {
-                    IterableSet::new(
-                        StorageKey::TokensByTableInner {
-                            table_hash: env::sha256(table.as_bytes())
-                        }
-                    )
-                });
+                ));
             table_tokens.insert(token_id.clone());
             self.tokens_by_table.insert(table.clone(), table_tokens);
         }
         
-        // Update recent tokens cache
+        // Update recent tokens cache (FIFO - First In First Out)
         self.recent_tokens.push(token_id.clone());
         if self.recent_tokens.len() > RECENT_TOKENS_LIMIT as u32 {
-            self.recent_tokens.swap_remove(0);
+            // Remove the oldest token (first element) while maintaining order
+            // Note: This is O(n) but necessary for maintaining chronological order
+            let mut new_recent = Vector::new(StorageKey::RecentTokens);
+            for i in 1..self.recent_tokens.len() {
+                new_recent.push(self.recent_tokens.get(i).unwrap().clone());
+            }
+            self.recent_tokens = new_recent;
         }
         
         // Store batch summary
@@ -746,10 +710,16 @@ impl ETRAPContract {
         let limit = limit.unwrap_or(50).min(100) as usize;
         let from_index = from_index.unwrap_or(0) as usize;
         
-        let empty_set = IterableSet::new(StorageKey::TokensByDatabaseInner { database_hash: b"empty".to_vec() });
-        let db_tokens = self.tokens_by_database
-            .get(&database)
-            .unwrap_or(&empty_set);
+        let db_tokens = match self.tokens_by_database.get(&database) {
+            Some(tokens) => tokens,
+            None => {
+                return BatchSearchResult {
+                    batches: vec![],
+                    total_count: 0,
+                    has_more: false,
+                };
+            }
+        };
         
         let total = db_tokens.len() as u64;
         let tokens: Vec<BatchInfo> = db_tokens
